@@ -28,10 +28,20 @@ def main() -> int:
     path = os.path.join(out_dir, "entry.txt")
     with open(path, "w", encoding="utf-8", newline="\n") as fh:
         fh.write(line)
-    with open(path, encoding="utf-8") as fh:
-        if fh.read() != line:
-            print("entry.txt did not round-trip", file=sys.stderr)
-            return 1
+    expected = line.encode("utf-8")
+    with open(path, "rb") as fh:
+        raw = fh.read()
+    try:
+        text = raw.decode("utf-8")
+    except UnicodeDecodeError:
+        print("entry.txt is not valid UTF-8", file=sys.stderr)
+        return 1
+    if raw != expected:
+        print("entry.txt is not byte-identical to the roast line", file=sys.stderr)
+        return 1
+    if text.splitlines() != [line] or not 1 <= len(text) <= 200:
+        print("entry.txt must be exactly one line of 1-200 characters", file=sys.stderr)
+        return 1
     print(f"wrote {len(line)} characters to {path}")
     return 0
 
